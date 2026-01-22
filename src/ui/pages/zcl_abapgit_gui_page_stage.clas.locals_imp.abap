@@ -208,10 +208,11 @@ CLASS lcl_selected IMPLEMENTATION.
 
     DATA lv_stage_data TYPE string.
     DATA lo_form_data TYPE REF TO zcl_abapgit_string_map.
-    DATA lo_json TYPE REF TO zcl_abapgit_ajson.
-    DATA lt_members TYPE string_table.
-    DATA lv_member TYPE string.
+    DATA lt_pairs TYPE string_table.
+    DATA lv_pair TYPE string.
+    DATA lv_key TYPE string.
     DATA lv_value TYPE string.
+    DATA lv_colon_pos TYPE i.
 
     CREATE OBJECT ro_files.
 
@@ -222,21 +223,78 @@ CLASS lcl_selected IMPLEMENTATION.
       lv_stage_data = lo_form_data->get( 'stage_data' ).
 
       TRY.
-          " Parse JSON using the built-in JSON parser
-          lo_json = zcl_abapgit_ajson=>parse( lv_stage_data ).
-
-          " Iterate through all members of the JSON object
-          lt_members = lo_json->members( '/' ).
-
-          LOOP AT lt_members INTO lv_member.
-            lv_value = lo_json->get_string( |/{ lv_member }| ).
-            ro_files->set(
-              iv_key = lv_member
-              iv_val = lv_value ).
+          " Simple JSON parsing for flat object structure: {"key":"value","key2":"value2"}
+          " Remove braces and spaces
+          lv_stage_data = replace( val = lv_stage_data sub = '{' with = '' ).
+          lv_stage_data = replace( val = lv_stage_data sub = '}' with = '' ).
+          
+          " Split by comma (but be careful with commas inside quotes)
+          " For simplicity, assume values don't contain commas or use a more robust parser
+          " Since our values are just single characters (A, R, I), this should be safe
+          
+          " Parse each key-value pair
+          DATA lv_in_quotes TYPE abap_bool VALUE abap_false.
+          DATA lv_current_pair TYPE string.
+          DATA lv_char TYPE c LENGTH 1.
+          DATA lv_len TYPE i.
+          DATA lv_idx TYPE i.
+          
+          lv_len = strlen( lv_stage_data ).
+          lv_idx = 0.
+          
+          WHILE lv_idx < lv_len.
+            lv_char = lv_stage_data+lv_idx(1).
+            
+            IF lv_char = '"'.
+              IF lv_in_quotes = abap_false.
+                lv_in_quotes = abap_true.
+              ELSE.
+                lv_in_quotes = abap_false.
+              ENDIF.
+            ELSEIF lv_char = ',' AND lv_in_quotes = abap_false.
+              " End of a pair
+              IF lv_current_pair IS NOT INITIAL.
+                APPEND lv_current_pair TO lt_pairs.
+                CLEAR lv_current_pair.
+              ENDIF.
+              lv_idx = lv_idx + 1.
+              CONTINUE.
+            ENDIF.
+            
+            lv_current_pair = lv_current_pair && lv_char.
+            lv_idx = lv_idx + 1.
+          ENDWHILE.
+          
+          " Don't forget the last pair
+          IF lv_current_pair IS NOT INITIAL.
+            APPEND lv_current_pair TO lt_pairs.
+          ENDIF.
+          
+          " Now parse each pair to extract key and value
+          LOOP AT lt_pairs INTO lv_pair.
+            " Format should be "key":"value"
+            " Find the colon between key and value
+            FIND ':' IN lv_pair MATCH OFFSET lv_colon_pos.
+            IF sy-subrc = 0.
+              lv_key = substring( val = lv_pair len = lv_colon_pos ).
+              lv_value = substring( val = lv_pair off = lv_colon_pos + 1 ).
+              
+              " Remove quotes and spaces
+              REPLACE ALL OCCURRENCES OF '"' IN lv_key WITH ''.
+              REPLACE ALL OCCURRENCES OF '"' IN lv_value WITH ''.
+              CONDENSE lv_key NO-GAPS.
+              CONDENSE lv_value NO-GAPS.
+              
+              IF lv_key IS NOT INITIAL AND lv_value IS NOT INITIAL.
+                ro_files->set(
+                  iv_key = lv_key
+                  iv_val = lv_value ).
+              ENDIF.
+            ENDIF.
           ENDLOOP.
 
-        CATCH zcx_abapgit_ajson_error cx_root.
-          " If JSON parsing fails, fall back to legacy format
+        CATCH cx_root.
+          " If parsing fails, fall back to legacy format
           ro_files = lo_form_data.
       ENDTRY.
     ELSE.

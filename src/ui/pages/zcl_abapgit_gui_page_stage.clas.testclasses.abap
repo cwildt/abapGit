@@ -10,6 +10,11 @@ CLASS lcl_mock_event DEFINITION.
         iv_value TYPE csequence
       RAISING
         zcx_abapgit_exception.
+    METHODS set_json_data
+      IMPORTING
+        iv_json_data TYPE csequence
+      RAISING
+        zcx_abapgit_exception.
 
   PRIVATE SECTION.
     DATA mo_files TYPE REF TO zcl_abapgit_string_map.
@@ -33,6 +38,7 @@ CLASS ltcl_stage DEFINITION FINAL FOR TESTING
       emtpy_list FOR TESTING RAISING cx_static_check,
       unknown_file FOR TESTING RAISING cx_static_check,
       add FOR TESTING RAISING cx_static_check,
+      add_json_format FOR TESTING RAISING cx_static_check,
       uppercase_path FOR TESTING RAISING cx_static_check,
       uppercase_status_path FOR TESTING RAISING cx_static_check,
       mixed_case FOR TESTING RAISING cx_static_check,
@@ -109,6 +115,14 @@ CLASS lcl_mock_event IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD set_json_data.
+
+    mo_files->set(
+        iv_key = 'stage_data'
+        iv_val = iv_json_data ).
+
+  ENDMETHOD.
+
 ENDCLASS.
 
 
@@ -161,6 +175,34 @@ CLASS ltcl_stage IMPLEMENTATION.
         iv_filename = 'zddls.ddls.baseinfo' ).
 
     when_stage_selected( ).
+
+    then_file_is_added(
+        iv_path     = '/src/'
+        iv_filename = 'zddls.ddls.baseinfo' ).
+
+  ENDMETHOD.
+
+
+  METHOD add_json_format.
+    " Test the new JSON format for WebGUI compatibility
+
+    " Set JSON-serialized stage data
+    mo_mock_event->set_json_data( '{"/src/zddls.ddls.baseinfo":"A"}' ).
+
+    given_status(
+        iv_path = '/src/'
+        iv_filename = 'zddls.ddls.baseinfo' ).
+
+    given_local(
+        iv_path = '/src/'
+        iv_filename = 'zddls.ddls.baseinfo' ).
+
+    when_stage_selected( ).
+
+    " If there was an error, report it
+    IF mx_error IS BOUND.
+      cl_abap_unit_assert=>fail( mx_error->get_text( ) ).
+    ENDIF.
 
     then_file_is_added(
         iv_path     = '/src/'
