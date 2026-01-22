@@ -779,16 +779,19 @@ StageHelper.prototype.updateMenu = function() {
 };
 
 // Submit stage state to the server
-StageHelper.prototype.submit = function() {
+StageHelper.prototype.submit = function(event) {
+  if (event) event.preventDefault(); // Prevent default anchor behavior for SAP GUI for HTML
   submitSapeventForm(this.collectData(), this.formAction);
 };
 
-StageHelper.prototype.submitVisible = function() {
+StageHelper.prototype.submitVisible = function(event) {
+  if (event) event.preventDefault(); // Prevent default anchor behavior for SAP GUI for HTML
   this.markVisiblesAsAdded();
   submitSapeventForm(this.collectData(), this.formAction);
 };
 
-StageHelper.prototype.submitPatch = function() {
+StageHelper.prototype.submitPatch = function(event) {
+  if (event) event.preventDefault(); // Prevent default anchor behavior for SAP GUI for HTML
   submitSapeventForm(this.collectData(), this.patchAction);
 };
 
