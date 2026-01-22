@@ -533,7 +533,7 @@ StageHelper.prototype.injectFilterMe = function() {
   var a = document.createElement("A");
   a.appendChild(document.createTextNode("me"));
   a.onclick = this.onFilterMe.bind(this);
-  a.href    = "#";
+  a.href    = "javascript:void(0)";
   changedByHead.appendChild(a);
   changedByHead.appendChild(document.createTextNode(")"));
 };
