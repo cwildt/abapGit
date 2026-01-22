@@ -387,7 +387,7 @@ CLASS zcl_abapgit_html IMPLEMENTATION.
           ENDIF.
           lv_href  = | href="sapevent:{ lv_act }"|.
         WHEN zif_abapgit_html=>c_action_type-onclick.
-          lv_href  = ' href="javascript:void(0)".
+          lv_href  = ' href="javascript:void(0)"'.
           lv_click = | onclick="{ iv_act }"|.
         WHEN zif_abapgit_html=>c_action_type-dummy.
           lv_href  = ' href="javascript:void(0)"'.
