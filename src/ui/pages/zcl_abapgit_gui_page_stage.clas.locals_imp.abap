@@ -223,28 +223,50 @@ CLASS lcl_selected IMPLEMENTATION.
       lv_stage_data = lo_form_data->get( 'stage_data' ).
 
       TRY.
+          " Validate JSON format: should start with { and end with }
+          lv_stage_data = condense( lv_stage_data ).
+          IF strlen( lv_stage_data ) < 2 OR
+             lv_stage_data(1) <> '{' OR
+             substring( val = lv_stage_data
+                        off = strlen( lv_stage_data ) - 1
+                        len = 1 ) <> '}'.
+            " Invalid JSON format, fall back to legacy
+            ro_files = lo_form_data.
+            RETURN.
+          ENDIF.
+
           " Simple JSON parsing for flat object structure: {"key":"value","key2":"value2"}
-          " Remove braces and spaces
-          lv_stage_data = replace( val = lv_stage_data sub = '{' with = '' ).
-          lv_stage_data = replace( val = lv_stage_data sub = '}' with = '' ).
-          
+          " This parser handles keys containing forward slashes, which are common in file paths
+          " Expected values are single-character status codes:
+          "   A = Add
+          "   R = Remove
+          "   I = Ignore
+          "   ? = Reset
+          " Remove braces
+          lv_stage_data = replace( val = lv_stage_data
+                                   sub = '{'
+                                   with = '' ).
+          lv_stage_data = replace( val = lv_stage_data
+                                   sub = '}'
+                                   with = '' ).
+
           " Split by comma (but be careful with commas inside quotes)
           " For simplicity, assume values don't contain commas or use a more robust parser
           " Since our values are just single characters (A, R, I), this should be safe
-          
+
           " Parse each key-value pair
           DATA lv_in_quotes TYPE abap_bool VALUE abap_false.
           DATA lv_current_pair TYPE string.
           DATA lv_char TYPE c LENGTH 1.
           DATA lv_len TYPE i.
           DATA lv_idx TYPE i.
-          
+
           lv_len = strlen( lv_stage_data ).
           lv_idx = 0.
-          
+
           WHILE lv_idx < lv_len.
             lv_char = lv_stage_data+lv_idx(1).
-            
+
             IF lv_char = '"'.
               IF lv_in_quotes = abap_false.
                 lv_in_quotes = abap_true.
@@ -260,31 +282,33 @@ CLASS lcl_selected IMPLEMENTATION.
               lv_idx = lv_idx + 1.
               CONTINUE.
             ENDIF.
-            
+
             lv_current_pair = lv_current_pair && lv_char.
             lv_idx = lv_idx + 1.
           ENDWHILE.
-          
+
           " Don't forget the last pair
           IF lv_current_pair IS NOT INITIAL.
             APPEND lv_current_pair TO lt_pairs.
           ENDIF.
-          
+
           " Now parse each pair to extract key and value
           LOOP AT lt_pairs INTO lv_pair.
             " Format should be "key":"value"
             " Find the colon between key and value
             FIND ':' IN lv_pair MATCH OFFSET lv_colon_pos.
             IF sy-subrc = 0.
-              lv_key = substring( val = lv_pair len = lv_colon_pos ).
-              lv_value = substring( val = lv_pair off = lv_colon_pos + 1 ).
-              
+              lv_key = substring( val = lv_pair
+                                  len = lv_colon_pos ).
+              lv_value = substring( val = lv_pair
+                                    off = lv_colon_pos + 1 ).
+
               " Remove quotes and spaces
               REPLACE ALL OCCURRENCES OF '"' IN lv_key WITH ''.
               REPLACE ALL OCCURRENCES OF '"' IN lv_value WITH ''.
               CONDENSE lv_key NO-GAPS.
               CONDENSE lv_value NO-GAPS.
-              
+
               IF lv_key IS NOT INITIAL AND lv_value IS NOT INITIAL.
                 ro_files->set(
                   iv_key = lv_key
@@ -293,8 +317,9 @@ CLASS lcl_selected IMPLEMENTATION.
             ENDIF.
           ENDLOOP.
 
-        CATCH cx_root.
-          " If parsing fails, fall back to legacy format
+        CATCH cx_sy_range_out_of_bounds cx_sy_conversion_no_number.
+          " If parsing fails (e.g., malformed JSON, unexpected format),
+          " fall back to legacy format for backward compatibility
           ro_files = lo_form_data.
       ENDTRY.
     ELSE.
