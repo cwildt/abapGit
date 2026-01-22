@@ -130,12 +130,30 @@ function submitSapeventForm(params, action, method, form) {
     || document.getElementById(stub_form_id)
     || document.createElement("form");
 
+  // Clear any previously added hidden fields to avoid duplicates (important for SAP GUI for HTML)
+  while (form.firstChild) {
+    form.removeChild(form.firstChild);
+  }
+
   form.setAttribute("method", method || "post");
+
+  // Extract action name without sapevent prefix for the sap_event field
+  var actionName = action;
   if (/sapevent/i.test(action)) {
     form.setAttribute("action", action);
+    // Extract just the event name from sapevent:eventname format
+    actionName = action.replace(/^sapevent:/i, "");
   } else {
     form.setAttribute("action", getSapeventPrefix() + "SAPEVENT:" + action);
+    actionName = action;
   }
+
+  // Add sap_event field for SAP GUI for HTML compatibility
+  var sapEventField = document.createElement("input");
+  sapEventField.setAttribute("type", "hidden");
+  sapEventField.setAttribute("name", "sap_event");
+  sapEventField.setAttribute("value", actionName);
+  form.appendChild(sapEventField);
 
   for (var key in params) {
     var hiddenField = document.createElement("input");
