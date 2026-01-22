@@ -371,7 +371,7 @@ CLASS zcl_abapgit_html IMPLEMENTATION.
       lv_class = | class="{ lv_class }"|.
     ENDIF.
 
-    lv_href = ' href="#"'. " Default, dummy
+    lv_href = ' href="javascript:void(0)"'. " Default, dummy
     lv_act  = iv_act.
     IF ( iv_act IS NOT INITIAL OR iv_typ = zif_abapgit_html=>c_action_type-dummy )
         AND iv_opt NA zif_abapgit_html=>c_html_opt-crossout.
@@ -387,10 +387,10 @@ CLASS zcl_abapgit_html IMPLEMENTATION.
           ENDIF.
           lv_href  = | href="sapevent:{ lv_act }"|.
         WHEN zif_abapgit_html=>c_action_type-onclick.
-          lv_href  = ' href="#"'.
+          lv_href  = ' href="javascript:void(0)".
           lv_click = | onclick="{ iv_act }"|.
         WHEN zif_abapgit_html=>c_action_type-dummy.
-          lv_href  = ' href="#"'.
+          lv_href  = ' href="javascript:void(0)"'.
       ENDCASE.
     ENDIF.
 
