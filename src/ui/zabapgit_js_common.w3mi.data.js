@@ -145,7 +145,7 @@ function submitSapeventForm(params, action, method, form) {
     form.appendChild(hiddenField);
   }
 
-  var formExistsInDOM = form.id && Boolean(document.querySelector("#" + form.id));
+  var formExistsInDOM = form.id && Boolean(document.querySelector("javascript:void(0)" + form.id));
 
   if (form.id !== stub_form_id && !formExistsInDOM) {
     document.body.appendChild(form);
@@ -921,7 +921,7 @@ function DiffHelper(params) {
 
   // Hijack stage command
   if (this.dom.stageButton) {
-    this.dom.stageButton.href    = "#";
+    this.dom.stageButton.href    = "javascript:void(0)";
     this.dom.stageButton.onclick = this.onStage.bind(this);
   }
 }
@@ -2001,7 +2001,7 @@ Patch.prototype.clickAllLineCheckboxesInSection = function(oSection, bChecked) {
 };
 
 Patch.prototype.registerStagePatch = function() {
-  var elStage        = document.querySelector("#" + this.ID.STAGE);
+  var elStage        = document.querySelector("javascript:void(0)" + this.ID.STAGE);
   var REFRESH_PREFIX = "refresh";
 
   elStage.addEventListener("click", this.submitPatch.bind(this, this.ACTION.PATCH_STAGE));
@@ -2342,7 +2342,7 @@ function enumerateUiActions() {
         processUL(item.children[1], menutext);
       } else if (item.firstElementChild && item.firstElementChild.nodeName === "A") {
         var anchor = item.firstElementChild;
-        if (anchor.href && anchor.href !== "#") items.push([anchor, prefix]);
+        if (anchor.href && anchor.href !== "javascript:void(0)") items.push([anchor, prefix]);
       }
     }
   }
@@ -2358,7 +2358,7 @@ function enumerateUiActions() {
   items = items.map(function(item) {
     var action = "";
     var anchor = item[0];
-    if (anchor.href.includes("#")) {
+    if (anchor.href.includes("javascript:void(0)")) {
       action = function() {
         anchor.click();
       };
