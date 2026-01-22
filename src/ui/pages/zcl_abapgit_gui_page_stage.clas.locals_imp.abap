@@ -41,6 +41,14 @@ CLASS lcl_selected DEFINITION CREATE PRIVATE.
       RAISING
         zcx_abapgit_exception.
 
+    METHODS parse_stage_data
+      IMPORTING
+        ii_event         TYPE REF TO zif_abapgit_gui_event
+      RETURNING
+        VALUE(ro_files)  TYPE REF TO zcl_abapgit_string_map
+      RAISING
+        zcx_abapgit_exception.
+
     CLASS-DATA:
       gi_instance TYPE REF TO lif_selected.
 
@@ -59,7 +67,7 @@ CLASS lcl_selected IMPLEMENTATION.
       <ls_file> LIKE LINE OF it_local,
       <ls_item> LIKE LINE OF lo_files->mt_entries.
 
-    lo_files = ii_event->form_data( ).
+    lo_files = parse_stage_data( ii_event ).
 
     IF lo_files->size( ) = 0.
       zcx_abapgit_exception=>raise( 'process_stage_list: empty list' ).
@@ -192,6 +200,49 @@ CLASS lcl_selected IMPLEMENTATION.
     zcx_abapgit_exception=>raise(
       |Unable to stage { is_file-filename }. If the filename contains spaces, this is a known issue.| &&
       | Consider ignoring or staging the file at a later time.| ).
+
+  ENDMETHOD.
+
+
+  METHOD parse_stage_data.
+
+    DATA lv_stage_data TYPE string.
+    DATA lo_form_data TYPE REF TO zcl_abapgit_string_map.
+    DATA lo_json TYPE REF TO zcl_abapgit_ajson.
+    DATA lt_members TYPE string_table.
+    DATA lv_member TYPE string.
+    DATA lv_value TYPE string.
+
+    CREATE OBJECT ro_files.
+
+    lo_form_data = ii_event->form_data( ).
+
+    " Check if we have JSON-serialized stage data (new format for WebGUI compatibility)
+    IF lo_form_data->has( 'stage_data' ).
+      lv_stage_data = lo_form_data->get( 'stage_data' ).
+
+      TRY.
+          " Parse JSON using the built-in JSON parser
+          lo_json = zcl_abapgit_ajson=>parse( lv_stage_data ).
+
+          " Iterate through all members of the JSON object
+          lt_members = lo_json->members( '/' ).
+
+          LOOP AT lt_members INTO lv_member.
+            lv_value = lo_json->get_string( |/{ lv_member }| ).
+            ro_files->set(
+              iv_key = lv_member
+              iv_val = lv_value ).
+          ENDLOOP.
+
+        CATCH zcx_abapgit_ajson_error cx_root.
+          " If JSON parsing fails, fall back to legacy format
+          ro_files = lo_form_data.
+      ENDTRY.
+    ELSE.
+      " Legacy format: form data contains file paths directly as keys
+      ro_files = lo_form_data.
+    ENDIF.
 
   ENDMETHOD.
 
