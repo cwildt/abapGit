@@ -137,12 +137,33 @@ function submitSapeventForm(params, action, method, form) {
     form.setAttribute("action", getSapeventPrefix() + "SAPEVENT:" + action);
   }
 
-  for (var key in params) {
+  // Check if we're submitting stage data (contains file paths as keys)
+  // If so, serialize as JSON to avoid issues with special characters in WebGUI
+  var isStageData = false;
+  var key;
+  for (key in params) {
+    if (key.indexOf("/") === 0) { // File paths start with /
+      isStageData = true;
+      break;
+    }
+  }
+
+  if (isStageData) {
+    // Serialize staging data as JSON for WebGUI compatibility
     var hiddenField = document.createElement("input");
     hiddenField.setAttribute("type", "hidden");
-    hiddenField.setAttribute("name", key);
-    hiddenField.setAttribute("value", params[key]);
+    hiddenField.setAttribute("name", "stage_data");
+    hiddenField.setAttribute("value", JSON.stringify(params));
     form.appendChild(hiddenField);
+  } else {
+    // Legacy behavior for other forms
+    for (key in params) {
+      hiddenField = document.createElement("input");
+      hiddenField.setAttribute("type", "hidden");
+      hiddenField.setAttribute("name", key);
+      hiddenField.setAttribute("value", params[key]);
+      form.appendChild(hiddenField);
+    }
   }
 
   var formExistsInDOM = form.id && Boolean(document.querySelector("#" + form.id));
