@@ -145,7 +145,7 @@ function submitSapeventForm(params, action, method, form) {
     form.appendChild(hiddenField);
   }
 
-  var formExistsInDOM = form.id && Boolean(document.querySelector("javascript:void(0)" + form.id));
+  var formExistsInDOM = form.id && Boolean(document.querySelector("#" + form.id));
 
   if (form.id !== stub_form_id && !formExistsInDOM) {
     document.body.appendChild(form);
@@ -2001,7 +2001,7 @@ Patch.prototype.clickAllLineCheckboxesInSection = function(oSection, bChecked) {
 };
 
 Patch.prototype.registerStagePatch = function() {
-  var elStage        = document.querySelector("javascript:void(0)" + this.ID.STAGE);
+  var elStage        = document.querySelector("#" + this.ID.STAGE);
   var REFRESH_PREFIX = "refresh";
 
   elStage.addEventListener("click", this.submitPatch.bind(this, this.ACTION.PATCH_STAGE));
