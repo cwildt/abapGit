@@ -506,9 +506,9 @@ function StageHelper(params) {
   };
 
   this.TEMPLATES = {
-    cmdReset : "<a>reset</a>",
-    cmdLocal : "<a>add</a>",
-    cmdRemote: "<a>ignore</a><a>remove</a>"
+    cmdReset : '<a href="javascript:void(0)">reset</a>',
+    cmdLocal : '<a href="javascript:void(0)">add</a>',
+    cmdRemote: '<a href="javascript:void(0)">ignore</a><a href="javascript:void(0)">remove</a>'
   };
 
   this.setHooks();
@@ -533,7 +533,7 @@ StageHelper.prototype.injectFilterMe = function() {
   var a = document.createElement("A");
   a.appendChild(document.createTextNode("me"));
   a.onclick = this.onFilterMe.bind(this);
-  a.href    = "#";
+  a.href    = "javascript:void(0)";
   changedByHead.appendChild(a);
   changedByHead.appendChild(document.createTextNode(")"));
 };
@@ -604,6 +604,7 @@ StageHelper.prototype.onPageLoad = function() {
 
 // Table event handler, change status
 StageHelper.prototype.onTableClick = function(event) {
+  event.preventDefault(); // Prevent default anchor behavior for SAP GUI for HTML
   var target = event.target || event.srcElement;
   if (!target) return;
 
